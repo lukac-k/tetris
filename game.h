@@ -9,10 +9,7 @@
 extern char board[ROWS][COLS];
 
 void tick();
-
 void start_game();
-
-// bool game_over();
 
 void mvleft(void);
 void mvright(void);
