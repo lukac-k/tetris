@@ -29,6 +29,13 @@ int main(void)
 		case KEY_RIGHT:
 			mvright();
 			break;
+		case 'x':
+		case KEY_UP:
+			rotcw();
+			break;
+		case 'z':
+			rotccw();
+			break;
 		case ' ':
 			mvdrop();
 			break;

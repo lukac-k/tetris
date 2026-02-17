@@ -13,6 +13,8 @@ void start_game();
 
 void mvleft(void);
 void mvright(void);
+void rotcw(void);
+void rotccw(void);
 void mvdrop(void);
 
 #endif
