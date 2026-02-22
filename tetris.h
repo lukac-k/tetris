@@ -6,15 +6,18 @@
 #define ROWS 20
 #define COLS 10
 
-extern char board[ROWS][COLS];
+typedef struct tetris_state *Tetris;
 
-void tick();
-void start_game();
+Tetris create_game(void);
+void tick(Tetris state);
+void render_board(Tetris state, void drawch(int x, int y, char c));
 
-void mvleft(void);
-void mvright(void);
-void rotcw(void);
-void rotccw(void);
-void mvdrop(void);
+void mvleft(Tetris state);
+void mvright(Tetris state);
+void rotcw(Tetris state);
+void rotccw(Tetris state);
+void mvdrop(Tetris state);
+
+char getcell(Tetris state, int x, int y); // TO BE IMPLEMENTED
 
 #endif

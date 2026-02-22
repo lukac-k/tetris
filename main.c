@@ -1,46 +1,49 @@
 #include <ncurses.h>
 #include <unistd.h>
-
 #include "tetris.h"
 
 static WINDOW *boardw;
 
 WINDOW *create_boardw(int lines, int columns, int height, int width);
 void ui_init(void);
-void draw_board(int n, int m, char board[n][m]);
+void draw_board(Tetris state);
+void drawch(int x, int y, char c);
 
 int main(void)
 {
+	Tetris state = create_game();
+
 	int ch;
 
 	ui_init();
 	boardw = create_boardw(ROWS, COLS, 1, 3);
 
-	start_game();
-	draw_board(ROWS, COLS, board);
+	render_board(state, drawch);
+	wrefresh(boardw);
 
 	while ((ch = getch()) != 'c') {
-		tick();
+		tick(state);
 
 		switch (ch) {
 		case KEY_LEFT:
-			mvleft();
+			mvleft(state);
 			break;
 		case KEY_RIGHT:
-			mvright();
+			mvright(state);
 			break;
 		case 'x':
 		case KEY_UP:
-			rotcw();
+			rotcw(state);
 			break;
 		case 'z':
-			rotccw();
+			rotccw(state);
 			break;
 		case ' ':
-			mvdrop();
+			mvdrop(state);
 			break;
 		}
-		draw_board(ROWS, COLS, board);
+		render_board(state, drawch);
+		wrefresh(boardw);
 	}
 	getch();
 	endwin();
@@ -48,16 +51,9 @@ int main(void)
 	return 0;
 }
 
-void draw_board(int n, int m, char b[n][m])
+void drawch(int x, int y, char c)
 {
-	int i, j;
-
-	for (i = 0; i < n; i++) {
-		for (j = 0; j < m; j++) {
-			mvwaddch(boardw, i + 1, j + 1, b[i][j]);
-		}
-	}
-	wrefresh(boardw);
+	mvwaddch(boardw, y + 1, x + 1, c);
 }
 
 void ui_init()

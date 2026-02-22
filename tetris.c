@@ -1,7 +1,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
-
 #include "tetris.h"
 
 #define BLOCK_LEN 4
@@ -14,15 +13,16 @@ struct tetrimino {
 	int posx;
 	int posy;
 };
-typedef struct tetrimino Tetr;
+typedef struct tetrimino Tetrimino;
 
-char board[ROWS][COLS];
-static Tetr *cur;
-static Tetr *next;
-
-static int curtick;
-static int score;
-static int gameover;
+struct tetris_state {
+	int curtick;
+	int score;
+	int gameover;
+	char board[ROWS][COLS];
+	Tetrimino *cur;
+	Tetrimino *next;
+};
 
 static const char TETRIMINO[N_TETRIMINO][ORIENTATIONS][BLOCK_LEN][BLOCK_LEN] = {
     {{
@@ -194,175 +194,201 @@ static const char TETRIMINO[N_TETRIMINO][ORIENTATIONS][BLOCK_LEN][BLOCK_LEN] = {
 	 {'\0', '\0', '\0', '\0'},
      }}};
 
-static void rmtetr(void);
-static void addtetr(void);
-static int clear_lines(void);
-static bool blocked(int offsetx, int offsety);
-static Tetr *mktetr(void);
+static void rmcurtetr(Tetris state);
+static void addcurtetr(Tetris state);
+static bool blocked(Tetris state, int offsetx, int offsety);
+static Tetrimino *mktetr(void);
+static int clear_lines(Tetris state);
 
-void start_game(void)
+Tetris create_game(void)
 {
 	int i, j;
+	Tetris state;
 
-	curtick = 0;
-	score = 0;
-	gameover = false;
+	state = malloc(sizeof(struct tetris_state));
+	if (state == NULL)
+		exit(EXIT_FAILURE);
+
+	state->curtick = 0;
+	state->score = 0;
+	state->gameover = false;
 
 	srand((unsigned)time(NULL));
 
-	cur = malloc(sizeof(struct tetrimino));
-	next = malloc(sizeof(struct tetrimino));
-	if (cur == NULL || next == NULL)
+	state->cur = malloc(sizeof(struct tetrimino));
+	state->next = malloc(sizeof(struct tetrimino));
+	if (state->cur == NULL || state->next == NULL)
 		exit(EXIT_FAILURE);
 
-	cur = mktetr();
-	next = mktetr();
+	state->cur = mktetr();
+	state->next = mktetr();
 
 	for (i = 0; i < ROWS; i++) {
 		for (j = 0; j < COLS; j++) {
-			board[i][j] = '-';
+			state->board[i][j] = '-';
 		}
 	}
-	addtetr();
+	addcurtetr(state);
+
+	return state;
 }
 
-void mvleft(void)
+void render_board(Tetris state, void drawch(int x, int y, char c))
 {
-	if (gameover)
+	int i, j;
+
+	for (i = 0; i < ROWS; i++) {
+		for (j = 0; j < COLS; j++) {
+			drawch(j, i, state->board[i][j]);
+		}
+	}
+}
+
+void mvleft(Tetris state)
+{
+	if (state->gameover)
 		return;
 
-	rmtetr();
-	if (!blocked(-1, 0))
-		cur->posx--;
-	addtetr();
+	rmcurtetr(state);
+	if (!blocked(state, -1, 0))
+		state->cur->posx--;
+	addcurtetr(state);
 }
 
-void mvright(void)
+void mvright(Tetris state)
 {
-	if (gameover)
+	if (state->gameover)
 		return;
 
-	rmtetr();
-	if (!blocked(1, 0))
-		cur->posx++;
-	addtetr();
+	rmcurtetr(state);
+	if (!blocked(state, 1, 0))
+		state->cur->posx++;
+	addcurtetr(state);
 }
 
-void rotcw(void)
+void rotcw(Tetris state)
 {
-	if (gameover)
+	if (state->gameover)
 		return;
 
-	rmtetr();
-	cur->orientation = (cur->orientation + 1) % ORIENTATIONS;
-	if (blocked(0, 0))
-		cur->orientation = (cur->orientation + 3) % ORIENTATIONS;
-	addtetr();
+	rmcurtetr(state);
+	state->cur->orientation = (state->cur->orientation + 1) % ORIENTATIONS;
+	if (blocked(state, 0, 0))
+		state->cur->orientation =
+		    (state->cur->orientation + 3) % ORIENTATIONS;
+	addcurtetr(state);
 }
 
-void rotccw(void)
+void rotccw(Tetris state)
 {
-	if (gameover)
+	if (state->gameover)
 		return;
 
-	rmtetr();
-	cur->orientation = (cur->orientation + 3) % ORIENTATIONS;
-	if (blocked(0, 0))
-		cur->orientation = (cur->orientation + 1) % ORIENTATIONS;
-	addtetr();
+	rmcurtetr(state);
+	state->cur->orientation = (state->cur->orientation + 3) % ORIENTATIONS;
+	if (blocked(state, 0, 0))
+		state->cur->orientation =
+		    (state->cur->orientation + 1) % ORIENTATIONS;
+	addcurtetr(state);
 }
 
-void mvdrop(void)
+void mvdrop(Tetris state)
 {
-	if (gameover)
+	if (state->gameover)
 		return;
 
 	int newy;
 
-	rmtetr();
-	for (newy = 0; !blocked(0, newy + 1); newy++)
+	rmcurtetr(state);
+	for (newy = 0; !blocked(state, 0, newy + 1); newy++)
 		;
 
-	cur->posy += newy;
-	addtetr();
-	score += clear_lines();
+	state->cur->posy += newy;
+	addcurtetr(state);
+	state->score += clear_lines(state);
 
-	free(cur);
-	cur = next;
-	next = mktetr();
-	curtick = 0;
+	free(state->cur);
+	state->cur = state->next;
+	state->next = mktetr();
+	state->curtick = 0;
 
-	if (blocked(0, 0))
-		gameover = true;
+	if (blocked(state, 0, 0))
+		state->gameover = true;
 	else
-		addtetr();
+		addcurtetr(state);
 }
 
-void tick()
+void tick(Tetris state)
 {
-	if (curtick < 10) {
-		curtick++;
+	if (state->curtick < 10) {
+		state->curtick++;
 		return;
 	}
-	curtick = 0;
+	state->curtick = 0;
 
-	if (gameover)
+	if (state->gameover)
 		return;
 
-	rmtetr();
+	rmcurtetr(state);
 
-	if (!blocked(0, 1)) {
-		cur->posy++;
-		addtetr();
+	if (!blocked(state, 0, 1)) {
+		state->cur->posy++;
+		addcurtetr(state);
 		return;
 	}
 
-	addtetr();
-	score += clear_lines();
+	addcurtetr(state);
+	state->score += clear_lines(state);
 
-	free(cur);
-	cur = next;
-	next = mktetr();
+	free(state->cur);
+	state->cur = state->next;
+	state->next = mktetr();
 
-	if (blocked(0, 0))
-		gameover = true;
+	if (blocked(state, 0, 0))
+		state->gameover = true;
 	else
-		addtetr();
+		addcurtetr(state);
 }
 
-static void rmtetr(void)
+static void rmcurtetr(Tetris state)
 {
 	int i, j;
 
 	for (i = 0; i < BLOCK_LEN; i++) {
 		for (j = 0; j < BLOCK_LEN; j++) {
-			if (cur->block[cur->orientation][i][j])
-				board[cur->posy + i][cur->posx + j] = '-';
+			if (state->cur->block[state->cur->orientation][i]
+					     [j]) // fixa så den bara pekar på
+						  // en 4x4?
+				state->board[state->cur->posy + i]
+					    [state->cur->posx + j] = '-';
 		}
 	}
 }
 
-static void addtetr(void)
+static void addcurtetr(Tetris state)
 {
 	int i, j;
 
 	for (i = 0; i < BLOCK_LEN; i++) {
 		for (j = 0; j < BLOCK_LEN; j++) {
-			if (cur->block[cur->orientation][i][j])
-				board[cur->posy + i][cur->posx + j] =
-				    cur->block[cur->orientation][i][j];
+			if (state->cur->block[state->cur->orientation][i][j])
+				state->board[state->cur->posy + i]
+					    [state->cur->posx + j] =
+				    state->cur
+					->block[state->cur->orientation][i][j];
 		}
 	}
 }
 
-static int clear_lines(void)
+static int clear_lines(Tetris state)
 {
 	int row, col, cnt;
 
 	cnt = 0;
 	row = ROWS - 1;
 	while (row > 0) {
-		for (col = 0; col < COLS && board[row][col] != '-'; col++)
+		for (col = 0; col < COLS && state->board[row][col] != '-';
+		     col++)
 			;
 		if (col != COLS) {
 			row--;
@@ -370,27 +396,27 @@ static int clear_lines(void)
 		}
 
 		for (int i = row; i - 1 > 0; i--) {
-			memcpy(board[i], board[i - 1], COLS);
+			memcpy(state->board[i], state->board[i - 1], COLS);
 		}
 
 		for (int i = 0; i < COLS; i++)
-			board[0][i] = '-';
+			state->board[0][i] = '-';
 		cnt++;
 	}
 	return cnt;
 }
 
-static bool blocked(int offsetx, int offsety)
+static bool blocked(Tetris state, int offsetx, int offsety)
 {
 	int boardx, boardy;
 	int i, j;
 
-	boardx = cur->posx + offsetx;
-	boardy = cur->posy + offsety;
+	boardx = state->cur->posx + offsetx;
+	boardy = state->cur->posy + offsety;
 
 	for (i = 0; i < BLOCK_LEN; i++) {
 		for (j = 0; j < BLOCK_LEN; j++) {
-			if (!cur->block[cur->orientation][i][j])
+			if (!state->cur->block[state->cur->orientation][i][j])
 				continue;
 
 			if (boardx + j < 0 || boardx + j >= COLS ||
@@ -398,17 +424,17 @@ static bool blocked(int offsetx, int offsety)
 				return true;
 			}
 
-			if (board[boardy + i][boardx + j] != '-')
+			if (state->board[boardy + i][boardx + j] != '-')
 				return true;
 		}
 	}
 	return false;
 }
 
-Tetr *mktetr()
+Tetrimino *mktetr()
 {
-	Tetr *t;
-	t = malloc(sizeof(Tetr));
+	Tetrimino *t;
+	t = malloc(sizeof(struct tetrimino));
 	if (t == NULL)
 		exit(EXIT_FAILURE);
 
