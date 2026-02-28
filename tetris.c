@@ -233,6 +233,13 @@ Tetris create_game(void)
 	return state;
 }
 
+void destroy_game(Tetris state)
+{
+	free(state->cur);
+	free(state->next);
+	free(state);
+}
+
 void render_board(Tetris state, void drawch(int x, int y, char c))
 {
 	int i, j;
@@ -356,9 +363,7 @@ static void rmcurtetr(Tetris state)
 
 	for (i = 0; i < BLOCK_LEN; i++) {
 		for (j = 0; j < BLOCK_LEN; j++) {
-			if (state->cur->block[state->cur->orientation][i]
-					     [j]) // fixa så den bara pekar på
-						  // en 4x4?
+			if (state->cur->block[state->cur->orientation][i][j])
 				state->board[state->cur->posy + i]
 					    [state->cur->posx + j] = '-';
 		}
