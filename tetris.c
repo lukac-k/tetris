@@ -3,7 +3,6 @@
 #include <time.h>
 #include "tetris.h"
 
-#define BLOCK_LEN 4
 #define N_TETRIMINO 7
 #define ORIENTATIONS 4
 
@@ -240,15 +239,42 @@ void destroy_game(Tetris state)
 	free(state);
 }
 
-void render_board(Tetris state, void drawch(int x, int y, char c))
+void render_board(Tetris state, void *ctx,
+		  void drawch(void *ctx, int x, int y, char c))
 {
 	int i, j;
 
 	for (i = 0; i < ROWS; i++) {
 		for (j = 0; j < COLS; j++) {
-			drawch(j, i, state->board[i][j]);
+			drawch(ctx, j, i, state->board[i][j]);
 		}
 	}
+}
+
+void render_next(Tetris state, void *ctx,
+		 void drawch(void *ctx, int x, int y, char c))
+{
+	int i, j;
+	char ch;
+
+	for (i = 0; i < BLOCK_LEN; i++) {
+		for (j = 0; j < BLOCK_LEN; j++) {
+			ch = state->next->block[state->next->orientation][i][j];
+			if (ch) {
+				drawch(
+				    ctx, j, i,
+				    state->next->block[state->next->orientation]
+						      [i][j]);
+			} else {
+				drawch(ctx, j, i, '-');
+			}
+		}
+	}
+}
+
+int get_score(Tetris state)
+{
+	return state->score;
 }
 
 void mvleft(Tetris state)
