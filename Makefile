@@ -1,11 +1,19 @@
-main: main.o tetris.o
-	gcc -o main main.o tetris.o -lncurses
+SHELL = /bin/sh
+CC ?= cc
+CFLAGS = -Wall
+LDLIBS = -lncurses
+
+objects = main.o tetris.o
+
+main: $(objects)
+	$(CC) -o main $(objects) $(LDLIBS)
 
 main.o: main.c tetris.h
-	gcc -c -Wall main.c
+	$(CC) -c $(CFLAGS) main.c
 
 tetris.o: tetris.c tetris.h
-	gcc -c -Wall tetris.c
+	$(CC) -c $(CFLAGS) tetris.c
 
+.PHONY: clean
 clean:
-	rm main main.o tetris.o
+	rm main $(objects)
