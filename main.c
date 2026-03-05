@@ -40,23 +40,23 @@ int main(void)
 	attr_off(A_BOLD, 0);
 
 	/* Create board window */
-	boardw = newwin(ROWS + 2, COLS + 2, 2, 3);
+	boardw = newwin(ROWS + 2, COLS * 2 + 2, 2, 3);
 	render_board(state, boardw, drawch);
 	box(boardw, 0, 0);
 	wrefresh(boardw);
 
 	/* Create next tetrinimo window */
-	nextw = newwin(BLOCK_LEN + 2, BLOCK_LEN + 2, 2, 17);
+	nextw = newwin(BLOCK_LEN + 2, BLOCK_LEN * 2 + 2, 2, 30);
 	render_next(state, nextw, drawch);
 	box(nextw, 0, 0);
-	mvwprintw(nextw, 0, 1, "Next");
+	mvwprintw(nextw, 0, 2, "Next");
 	wrefresh(nextw);
 
 	/* Create score window */
-	scorew = newwin(3, BLOCK_LEN + 2, 8, 17);
+	scorew = newwin(3, BLOCK_LEN * 2 + 2, 8, 30);
 	box(scorew, 0, 0);
-	mvwprintw(scorew, 0, 1, "Score");
-	mvwprintw(scorew, 1, 2, "%d", get_score(state));
+	mvwprintw(scorew, 0, 2, "Score");
+	mvwprintw(scorew, 1, 5, "%d", get_score(state));
 	wrefresh(scorew);
 
 	while ((ch = getch()) != 'c') {
@@ -84,7 +84,7 @@ int main(void)
 		wrefresh(boardw);
 		render_next(state, nextw, drawch);
 		wrefresh(nextw);
-		mvwprintw(scorew, 1, 2, "%d", get_score(state));
+		mvwprintw(scorew, 1, 5, "%d", get_score(state));
 		wrefresh(scorew);
 	}
 	getch();
@@ -99,7 +99,8 @@ int main(void)
 void drawch(void *ctx, int x, int y, char c)
 {
 	WINDOW *win = ctx;
-	mvwaddch(win, y + 1, x + 1, ' ' | COLOR_PAIR(color_pair(c)));
+	mvwaddch(win, y + 1, x * 2 + 1, ' ' | COLOR_PAIR(color_pair(c)));
+	mvwaddch(win, y + 1, x * 2 + 2, ' ' | COLOR_PAIR(color_pair(c)));
 }
 
 int color_pair(char c)
