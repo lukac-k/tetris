@@ -224,7 +224,7 @@ Tetris create_game(void)
 
 	for (i = 0; i < ROWS; i++) {
 		for (j = 0; j < COLS; j++) {
-			state->board[i][j] = '-';
+			state->board[i][j] = '\0';
 		}
 	}
 	addcurtetr(state);
@@ -266,7 +266,7 @@ void render_next(Tetris state, void *ctx,
 				    state->next->block[state->next->orientation]
 						      [i][j]);
 			} else {
-				drawch(ctx, j, i, '-');
+				drawch(ctx, j, i, '\0');
 			}
 		}
 	}
@@ -391,7 +391,7 @@ static void rmcurtetr(Tetris state)
 		for (j = 0; j < BLOCK_LEN; j++) {
 			if (state->cur->block[state->cur->orientation][i][j])
 				state->board[state->cur->posy + i]
-					    [state->cur->posx + j] = '-';
+					    [state->cur->posx + j] = '\0';
 		}
 	}
 }
@@ -418,7 +418,7 @@ static int clear_lines(Tetris state)
 	cnt = 0;
 	row = ROWS - 1;
 	while (row > 0) {
-		for (col = 0; col < COLS && state->board[row][col] != '-';
+		for (col = 0; col < COLS && state->board[row][col] != '\0';
 		     col++)
 			;
 		if (col != COLS) {
@@ -431,7 +431,7 @@ static int clear_lines(Tetris state)
 		}
 
 		for (int i = 0; i < COLS; i++)
-			state->board[0][i] = '-';
+			state->board[0][i] = '\0';
 		cnt++;
 	}
 	return cnt;
@@ -455,7 +455,7 @@ static bool blocked(Tetris state, int offsetx, int offsety)
 				return true;
 			}
 
-			if (state->board[boardy + i][boardx + j] != '-')
+			if (state->board[boardy + i][boardx + j] != '\0')
 				return true;
 		}
 	}
