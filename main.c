@@ -19,7 +19,6 @@ int main(void)
 	initscr();
 
 	start_color();
-	init_pair(0, COLOR_RED, COLOR_GREEN);
 	init_pair(1, COLOR_GREEN, COLOR_YELLOW);
 	init_pair(2, COLOR_GREEN, COLOR_CYAN);
 	init_pair(3, COLOR_GREEN, COLOR_MAGENTA);
@@ -59,7 +58,7 @@ int main(void)
 	mvwprintw(scorew, 1, 5, "%d", get_score(state));
 	wrefresh(scorew);
 
-	while ((ch = getch()) != 'c') {
+	while ((ch = getch()) != 'q') {
 		tick(state);
 
 		switch (ch) {
@@ -72,6 +71,9 @@ int main(void)
 		case 'x':
 		case KEY_UP:
 			rotcw(state);
+			break;
+		case KEY_DOWN:
+			tick(state);
 			break;
 		case 'z':
 			rotccw(state);
@@ -110,22 +112,16 @@ int color_pair(char c)
 		return 1;
 	case 'I':
 		return 2;
-		break;
 	case 'T':
 		return 3;
-		break;
 	case 'J':
 		return 4;
-		break;
 	case 'L':
 		return 5;
-		break;
 	case 'S':
 		return 6;
-		break;
 	case 'Z':
 		return 7;
-		break;
 	default:
 		return 0;
 	}
