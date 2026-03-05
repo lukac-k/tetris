@@ -28,5 +28,6 @@ make
 | ← / → | Move piece left/right |
 | ↑ or X | Rotate clockwise |
 | Z | Rotate counter-clockwise |
+| ↓ | Soft drop |
 | Space | Hard drop |
 | Q | Quit |
