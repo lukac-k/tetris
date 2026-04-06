@@ -5,6 +5,7 @@
 static WINDOW *boardw;
 static WINDOW *nextw;
 static WINDOW *scorew;
+static WINDOW *menuw;
 
 WINDOW *create_boardw(int lines, int columns, int height, int width);
 void drawch(void *ctx, int x, int y, char c);
@@ -14,6 +15,7 @@ int main(void)
 {
 	Tetris state = create_game();
 	int ch;
+	bool paused = false;
 
 	/* Initial ui setup */
 	initscr();
@@ -44,44 +46,68 @@ int main(void)
 	box(boardw, 0, 0);
 	wrefresh(boardw);
 
+	/* Create menu window */
+	menuw = newwin(6, 16, 3, 30);
+	mvwprintw(menuw, 0, 2, "Menu");
+	mvwprintw(menuw, 1, 0, "(1) New game");
+	mvwprintw(menuw, 2, 0, "(2) Pause/resume");
+	mvwprintw(menuw, 3, 0, "(3) Quit");
+	wrefresh(menuw);
+
 	/* Create next tetrinimo window */
-	nextw = newwin(BLOCK_LEN + 2, BLOCK_LEN * 2 + 2, 2, 30);
+	nextw = newwin(BLOCK_LEN + 2, BLOCK_LEN * 2 + 2, 15, 30);
 	render_next(state, nextw, drawch);
 	box(nextw, 0, 0);
 	mvwprintw(nextw, 0, 2, "Next");
 	wrefresh(nextw);
 
 	/* Create score window */
-	scorew = newwin(3, BLOCK_LEN * 2 + 2, 8, 30);
+	scorew = newwin(3, BLOCK_LEN * 2 + 2, 21, 30);
 	box(scorew, 0, 0);
 	mvwprintw(scorew, 0, 2, "Score");
 	mvwprintw(scorew, 1, 5, "%d", get_score(state));
 	wrefresh(scorew);
 
-	while ((ch = getch()) != 'q') {
-		tick(state);
+	while ((ch = getch()) != '3') {
+
+		if (!paused)
+			tick(state);
 
 		switch (ch) {
 		case KEY_LEFT:
-			mvleft(state);
+			if (!paused)
+				mvleft(state);
 			break;
 		case KEY_RIGHT:
-			mvright(state);
+			if (!paused)
+				mvright(state);
 			break;
 		case 'x':
 		case KEY_UP:
-			rotcw(state);
+			if (!paused)
+				rotcw(state);
 			break;
 		case KEY_DOWN:
-			tick(state);
+			if (!paused)
+				tick(state);
 			break;
 		case 'z':
-			rotccw(state);
+			if (!paused)
+				rotccw(state);
 			break;
 		case ' ':
-			mvdrop(state);
+			if (!paused)
+				mvdrop(state);
+			break;
+		case '1':
+			destroy_game(state);
+			state = create_game();
+			break;
+		case '2':
+			paused = !paused;
 			break;
 		}
+
 		render_board(state, boardw, drawch);
 		wrefresh(boardw);
 		render_next(state, nextw, drawch);
